@@ -1,79 +1,79 @@
-
 # yfinance_api
 
-Kleine Hilfs-API und Skripte zum Herunterladen und Bereitstellen von Marktdaten über yfinance.
+Small helper API and scripts for downloading and providing market data via yfinance.
 
-## Übersicht
+## Overview
 
-Dieses Repository enthält schlanke Hilfsprogramme zum Abrufen von Finanzdaten, einfache Helferfunktionen und einen kleinen API-Einstiegspunkt. Es ist so konzipiert, dass es lokal oder in einem Container einfach zu betreiben ist.
+This repository contains lightweight helper tools for retrieving financial data, simple utility functions, and a small API entry point. It is designed to be easy to run locally or inside a container.
 
-## Projektstruktur
+## Project Structure
 
-- `api.py` - Minimaler HTTP-Einstiegspunkt / Beispiel-Runner für die API, der Endpunkte für Finanzdaten bereitstellt.
-- `helper.py` - Hilfsfunktionen, die von der API und Skripten genutzt werden, z.B. zur Datenserialisierung.
-- `models/` - Datenmodelle und Schema-Hilfen zur Strukturierung der abgerufenen Daten wie Märkte, Indizes, etc.
-- `Dockerfile` / `docker-compose.yml` - Optional, für die Containerisierung der API.
-- `requirements.txt` / `Pipfile` - Python-Abhängigkeitsdateien.
+- `api.py` – Minimal HTTP entry point / example runner for the API that provides endpoints for financial data.
+- `helper.py` – Helper functions used by the API and scripts, e.g. for data serialization.
+- `models/` – Data models and schema helpers for structuring retrieved data such as markets, indices, etc.
+- `Dockerfile` / `docker-compose.yml` – Optional, for containerizing the API.
+- `requirements.txt` / `Pipfile` – Python dependency files.
 
-## Annahmen
+## Prerequisites
 
-- Python 3.12 oder neuer ist vorhanden.
-- Es wird eine virtuelle Umgebung für die Entwicklung verwendet (venv, pipenv oder ähnlich).
-- Netzwerkzugang zu externen Datenanbietern ist verfügbar.
-- Bei Ausführung in Docker ist Docker auf dem Host installiert und konfiguriert.
+- Python 3.12 or newer is installed.
+- A virtual environment is used for development (venv, pipenv, or similar).
+- Network access to external data providers is available.
+- If running in Docker, Docker must be installed and configured on the host.
 
 ## Installation
 
-1. Erstelle und aktiviere eine virtuelle Umgebung:
+1. Create and activate a virtual environment:
 
 ```bash
 python -m venv venv
 source venv/bin/activate
 ```
 
-2. Installiere die Abhängigkeiten:
+2. Install the dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Alternativ mit Pipenv**:
+**Alternatively with Pipenv**:
 
 ```bash
 pipenv install
 pipenv shell
 ```
 
-## Nutzung
+## Usage
 
-1. Lokal API starten:
+1. Start the API locally:
 
 ```bash
 uvicorn api:app --reload --port 8000 --host localhost
 ```
 
-2. API im Docker-Container starten:
+2. Start the API in a Docker container:
 
 ```bash
 docker build -t yfinance_api .
 docker run --rm -p 8000:8000 yfinance_api
 ```
 
-3. API-Endpunkte aufrufen (Beispiel):
+3. Call API endpoints (example):
+
 ```bash
 curl http://localhost:8000/markets
 curl http://localhost:8000/markets/status/US
 ```
 
-Alternativ über den Browser oder Tools wie Postman. OpenAPI-Dokumentation ist unter `http://localhost:8000/docs` verfügbar.
+Alternatively via a browser or tools such as Postman. The OpenAPI documentation is available at `http://localhost:8000/docs`.
 
-## Konfiguration
+## Configuration
 
-- Aktuell sind standardmäßig keine Umgebungsvariablen erforderlich. Falls API-Schlüssel oder weitere Einstellungen nötig werden, dokumentiere sie hier.
+- Currently no environment variables are required by default. If API keys or additional settings become necessary, document them here.
 
-## Nächste Schritte
+## Next Steps
 
-- /models/ - Weitere Datenmodelle hinzufügen (z.B. Aktien, ETFS, etc.)
-- /api.py - Weitere Endpunkte für spezifische Daten hinzufügen (z.B. historische Daten, Finanzkennzahlen, etc.)
-- Fehlerbehandlung und Logging verbessern.
-- Tests hinzufügen (Unit-Tests für Modelle und API-Endpunkte).
+- `/models/` – Add additional data models (e.g. stocks, ETFs, etc.).
+- `/api.py` – Add additional endpoints for specific data (e.g. historical data, financial metrics, etc.).
+- Improve error handling and logging.
+- Add tests (unit tests for models and API endpoints).
