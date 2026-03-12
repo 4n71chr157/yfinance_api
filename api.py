@@ -44,14 +44,14 @@ def get_markets() -> dict:
 	Retrieve all available market identifiers.
 
 	Returns:
-	- List of all supported markets (US, GB, ASIA, EUROPE, RATES, COMMODITIES, CURRENCIES, CRYPTOCURRENCIES)
+	- List of all supported markets
 	"""
 	return {
 		"markets": [market.value for market in MarketEnum]
 	}
 
 
-@app.get("/markets/status/{markets}", tags=["Market"], summary="Get Status for single or multiple Markets (path)")
+@app.get("/markets/status/{markets}", tags=["Market"], summary="Get Status for single or multiple Markets")
 def get_markets_status(markets: str = None) -> dict:
 	"""
 	Retrieve status information for markets.
@@ -77,21 +77,15 @@ def get_markets_status(markets: str = None) -> dict:
 		market_list = [m.value for m in MarketEnum]
 	else:
 		market_list = [m.strip().upper() for m in markets.split(",") if m.strip()]
-	results = {}
-	for market in market_list:
-		try:
-			market_enum = MarketEnum(market)
-			m = Market(market_enum.value)
-			results[market_enum.value] = serialize(getattr(m, "status", None))
-		except ValueError:
-			raise HTTPException(status_code=400, detail=f"Invalid market: {market}")
-		except Exception as e:
-			raise HTTPException(status_code=400, detail=str(e))
-
+	try:
+		markets = Markets(market_list)
+		results = {market.name: serialize(getattr(market, "status", None)) for market in markets}
+	except Exception as e:
+		raise HTTPException(status_code=400, detail=str(e))
 	return {"markets": results}
 
 
-@app.get("/markets/summary/{markets}", tags=["Market"], summary="Get Summary for single or multiple Markets (path)")
+@app.get("/markets/summary/{markets}", tags=["Market"], summary="Get Summary for single or multiple Markets")
 def get_markets_summary(markets: str = None) -> dict:
 	"""
 	Retrieve summary information for markets.
@@ -117,86 +111,103 @@ def get_markets_summary(markets: str = None) -> dict:
 		market_list = [m.value for m in MarketEnum]
 	else:
 		market_list = [m.strip().upper() for m in markets.split(",") if m.strip()]
-	results = {}
-	for market in market_list:
-		try:
-			market_enum = MarketEnum(market)
-			m = Market(market_enum.value)
-			results[market_enum.value] = serialize(getattr(m, "summary", None))
-		except ValueError:
-			raise HTTPException(status_code=400, detail=f"Invalid market: {market}")
+	try:
+		markets = Markets(market_list)
+		results = {market.name: serialize(getattr(market, "summary", None)) for market in markets}
+	except Exception as e:
+		raise HTTPException(status_code=400, detail=str(e))
 	return {"markets": results}
 
 
-@app.get("/index/news/{index}", tags=["Index"], summary="Get Index News")
-def get_index_news(index: str, count: int = 10, tab: str = "news") -> dict:
+@app.get("/indices/news/{indices}", tags=["Index"], summary="Get News for single or multiple Indices")
+def get_index_news(indices: str, count: int = 10, tab: str = "news") -> dict:
 	"""
-	Retrieve recent news articles related to a financial index.
+	Retrieve recent news articles related to financial indices.
 
 	Fetches raw news data from Yahoo Finance for any index symbol.
 
+	This endpoint supports both a path and a query form:
+
+	- Path: `/indices/news/{indices}` where `{indices}` is a single symbol or a comma-separated list of symbols.
+	  Examples: `/indices/news/^GSPC`, `/indices/news/^GSPC,^IXIC`
+	- Query: `/indices/news?indices=^GSPC,^IXIC` (the `indices` query parameter behaves the same)
+
 	Parameters:
-	- **index** (required): Yahoo Finance symbol for the index
+	- **indices** (required): Yahoo Finance symbol for the index, or a comma-separated list of symbols
 	  - Example: `^GSPC` (S&P 500), `^IXIC` (Nasdaq), `^FTSE` (FTSE 100)
 	- **count** (query): Number of news articles to retrieve (default: 10)
 	- **tab** (query): News tab to retrieve (default: "news")
 	  - Supported: "news", "press_releases", "all"
+	
 	Returns:
-	- Index symbol and list of recent news articles with title, publisher, link, and published date
+	- A mapping of index symbol to a list of news articles, where each article includes title, publisher, link, and published time.
 
 	Examples:
-	- `/index/news/^GSPC` - Recent news for S&P 500
-	- `/index/news/^IXIC` - Recent news for Nasdaq
-	- `/index/news/^FTSE` - Recent news for FTSE 100
+	- `/indices/news/^GSPC` - Recent news for S&P 500
+	- `/indices/news/^GSPC?count=5` - Last 5 news articles for S&P 500
+	- `/indices/news/^GSPC?tab=press_releases` - Press releases
+	- `/indices/news/^GSPC,^^IXIC` - Recent news for both S&P 500 and Nasdaq
 	"""
 	try:
-		i = Index(index)
+		indices = Indices(m.strip().upper() for m in indices.split(",") if m.strip())
+		results = {index.symbol: index._get_news(count=count, tab=tab) for index in indices}
 	except Exception as e:
 		raise HTTPException(status_code=400, detail=str(e))
 	return {
-		"index": index, 
-		"news": i._get_news(count=count, tab=tab)
+		"indices": results
 	}
 
 
-@app.get("/index/info/{index}", tags=["Index"], summary="Get Index Info")
-def get_index_info(index: str) -> dict:
+@app.get("/indices/info/{indices}", tags=["Index"], summary="Get Information for single or multiple Indices")
+def get_index_info(indices: str) -> dict:
 	"""
-	Retrieve detailed information about a financial index.
+	Retrieve detailed information about financial indices.
 
 	Fetches raw info data from Yahoo Finance for any index symbol.
 
+	This endpoint supports both a path and a query form:
+
+	- Path: `/indices/info/{indices}` where `{indices}` is a single symbol or a comma-separated list of symbols.
+	  Examples: `/indices/info/^GSPC`, `/indices/info/^GSPC,^IXIC`
+	- Query: `/indices/info?indices=^GSPC,^IXIC` (the `indices` query parameter behaves the same)
+
 	Parameters:
-	- **index** (required): Yahoo Finance symbol for the index
+	- **indices** (required): Yahoo Finance symbol for the index, or a comma-separated list of symbols
 	  - Example: `^GSPC` (S&P 500), `^IXIC` (Nasdaq), `^FTSE` (FTSE 100)
 
 	Returns:
-	- Index symbol and detailed info including name, exchange, currency, etc.
+	- A mapping of index symbol to its detailed info data, including attributes like full name, exchange, currency, and more.
 
 	Examples:
-	- `/index/info/^GSPC` - Info for S&P 500
-	- `/index/info/^IXIC` - Info for Nasdaq
-	- `/index/info/^FTSE` - Info for FTSE 100
+	- `/indices/info/^GSPC` - Info for S&P 500
+	- `/indices/info/^IXIC` - Info for Nasdaq
+	- `/indices/info/^FTSE,^GDAXI` - Info for FTSE 100 and DAX
 	"""
 	try:
-		i = Index(index)
+		indices = Indices([m.strip().upper() for m in indices.split(",") if m.strip()])
+		results = {index.symbol: index._get_info() for index in indices}
 	except Exception as e:
 		raise HTTPException(status_code=400, detail=str(e))
 	return {
-		"index": index, 
-		"info":	 i._get_info()
+		"indices": results
 	}
 
 
-@app.get("/index/historic_data/{index}", tags=["Index"], summary="Get Index Historical Data")
-def get_index_history(index: str, period: str = "1y", interval: str = "1d") -> dict:
+@app.get("/indices/historic_data/{indices}", tags=["Index"], summary="Get Historical Data for single or multiple Indices")
+def get_index_history(indices: str, period: str = "1y", interval: str = "1d") -> dict:
 	"""
-	Retrieve historical price data for a financial index.
+	Retrieve historical price data for financial indices.
 
 	Fetches raw historical data from Yahoo Finance for any index symbol.
 
+	This endpoint supports both a path and a query form:
+
+	- Path: `/indices/historic_data/{indices}` where `{indices}` is a single symbol or a comma-separated list of symbols.
+	  Examples: `/indices/historic_data/^GSPC`, `/indices/historic_data/^GSPC,^IXIC`
+	- Query: `/indices/historic_data?indices=^GSPC,^IXIC` (the `indices` query parameter behaves the same)
+
 	Parameters:
-	- **index** (required): Yahoo Finance symbol for the index
+	- **indices** (required): Yahoo Finance symbol for the index, or a comma-separated list of symbols
 	  - Example: `^GSPC` (S&P 500), `^IXIC` (Nasdaq), `^FTSE` (FTSE 100)
 	- **period** (query): Time period for historical data (default: `1y`)
 	  - Supported: `1d`, `5d`, `1mo`, `3mo`, `6mo`, `1y`, `2y`, `5y`, `10y`, `ytd`, `max`
@@ -207,17 +218,15 @@ def get_index_history(index: str, period: str = "1y", interval: str = "1d") -> d
 	- Index symbol, period, interval, and historical OHLCV data
 
 	Examples:
-	- `/index/historic_data/^GSPC` - S&P 500 last 1 year at daily intervals
-	- `/index/historic_data/^GSPC?period=3mo&interval=1h` - Last 3 months at hourly intervals
-	- `/index/historic_data/^IXIC?period=5y&interval=1wk` - Last 5 years at weekly intervals
+	- `/indices/historic_data/^GSPC` - S&P 500 last 1 year at daily intervals
+	- `/indices/historic_data/^GSPC?period=3mo&interval=1h` - Last 3 months at hourly intervals
+	- `/indices/historic_data/^IXIC?period=5y&interval=1wk` - Last 5 years at weekly intervals
 	"""
 	try:
-		i = Index(index, period=period, interval=interval)
+		indices = Indices([m.strip().upper() for m in indices.split(",") if m.strip()], period=period, interval=interval)
+		results = {index.symbol: index._get_historical_data().to_dict() for index in indices}
 	except Exception as e:
 		raise HTTPException(status_code=400, detail=str(e))
 	return {
-		"index": index, 
-		"period": period, 
-		"interval": interval, 
-		"data": i._get_historical_data().to_dict(orient="records")
+		"indices": results
 	}
